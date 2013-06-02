@@ -13,7 +13,7 @@ app.configure(function(){
 });
 
 app.get('/', function(req, res){
-  res.render("index.html");
+  res.render("client-build-deploy/index.html");
 });
 
 app.listen(8083);
