@@ -1,1 +1,0 @@
-define(["text!../config/config_build.json"],function(a){var b={dev:{host:"localhost",port:8e3,dispatcher:!1},build:JSON.parse(a)};return b})

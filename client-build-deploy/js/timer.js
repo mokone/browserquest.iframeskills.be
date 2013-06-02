@@ -1,0 +1,1 @@
+define(function(){var a=Class.extend({init:function(a,b){this.lastTime=b||0,this.duration=a},isOver:function(a){var b=!1;a-this.lastTime>this.duration&&(b=!0,this.lastTime=a);return b}});return a})

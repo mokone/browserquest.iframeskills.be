@@ -1,1 +1,0 @@
-define(function(){var a=Class.extend({init:function(a,b,c,d){this.x=a,this.y=b,this.width=c,this.height=d},contains:function(a){return a?a.gridX>=this.x&&a.gridY>=this.y&&a.gridX<this.x+this.width&&a.gridY<this.y+this.height:!1}});return a})
