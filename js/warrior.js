@@ -1,0 +1,1 @@
+define(["player"],function(a){var b=a.extend({init:function(a,b){this._super(a,b,Types.Entities.WARRIOR)}});return b})
