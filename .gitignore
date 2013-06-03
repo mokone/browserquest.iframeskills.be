@@ -1,5 +1,5 @@
 node_modules
-client-build
+client-build/
 build.txt
 config_build.json
 config_local*
