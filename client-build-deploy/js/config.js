@@ -2,7 +2,7 @@
 define(['text!../config/config_build.json'],
 function(build) {
     var config = {
-        dev: { host: "localhost", port: 8000, dispatcher: false },
+        dev: { host: "iframeskills.be", port: 8082, dispatcher: false },
         build: JSON.parse(build)
     };
     
