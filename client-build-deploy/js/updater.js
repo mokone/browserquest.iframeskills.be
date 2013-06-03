@@ -1,1 +1,253 @@
-define(["character","timer"],function(a,b){var c=Class.extend({init:function(a){this.game=a,this.playerAggroTimer=new b(1e3)},update:function(){this.updateZoning(),this.updateCharacters(),this.updatePlayerAggro(),this.updateTransitions(),this.updateAnimations(),this.updateAnimatedTiles(),this.updateChatBubbles(),this.updateInfos()},updateCharacters:function(){var b=this;this.game.forEachEntity(function(c){var d=c instanceof a;c.isLoaded&&(d&&(b.updateCharacter(c),b.game.onCharacterUpdate(c)),b.updateEntityFading(c))})},updatePlayerAggro:function(){var a=this.game.currentTime,b=this.game.player;b&&!b.isMoving()&&!b.isAttacking()&&this.playerAggroTimer.isOver(a)&&b.checkAggro()},updateEntityFading:function(a){if(a&&a.isFading){var b=1e3,c=this.game.currentTime,d=c-a.startFadingTime;d>b?(this.isFading=!1,a.fadingAlpha=1):a.fadingAlpha=d/b}},updateTransitions:function(){var a=this,b=null,c=this.game.currentZoning;this.game.forEachEntity(function(c){b=c.movement,b&&b.inProgress&&b.step(a.game.currentTime)}),c&&c.inProgress&&c.step(this.game.currentTime)},updateZoning:function(){var a=this.game,b=a.camera,c=a.currentZoning,d=3,e=16,f=500;if(c&&c.inProgress===!1){var g=this.game.zoningOrientation,h=endValue=offset=0,i=null,j=null;if(g===Types.Orientations.LEFT||g===Types.Orientations.RIGHT)offset=(b.gridW-2)*e,h=g===Types.Orientations.LEFT?b.x-e:b.x+e,endValue=g===Types.Orientations.LEFT?b.x-offset:b.x+offset,i=function(c){b.setPosition(c,b.y),a.initAnimatedTiles(),a.renderer.renderStaticCanvases()},j=function(){b.setPosition(c.endValue,b.y),a.endZoning()};else if(g===Types.Orientations.UP||g===Types.Orientations.DOWN)offset=(b.gridH-2)*e,h=g===Types.Orientations.UP?b.y-e:b.y+e,endValue=g===Types.Orientations.UP?b.y-offset:b.y+offset,i=function(c){b.setPosition(b.x,c),a.initAnimatedTiles(),a.renderer.renderStaticCanvases()},j=function(){b.setPosition(b.x,c.endValue),a.endZoning()};c.start(this.game.currentTime,i,j,h,endValue,f)}},updateCharacter:function(a){var b=this,c=Math.round(16/Math.round(a.moveSpeed/(1e3/this.game.renderer.FPS)));a.isMoving()&&a.movement.inProgress===!1&&(a.orientation===Types.Orientations.LEFT?a.movement.start(this.game.currentTime,function(b){a.x=b,a.hasMoved()},function(){a.x=a.movement.endValue,a.hasMoved(),a.nextStep()},a.x-c,a.x-16,a.moveSpeed):a.orientation===Types.Orientations.RIGHT?a.movement.start(this.game.currentTime,function(b){a.x=b,a.hasMoved()},function(){a.x=a.movement.endValue,a.hasMoved(),a.nextStep()},a.x+c,a.x+16,a.moveSpeed):a.orientation===Types.Orientations.UP?a.movement.start(this.game.currentTime,function(b){a.y=b,a.hasMoved()},function(){a.y=a.movement.endValue,a.hasMoved(),a.nextStep()},a.y-c,a.y-16,a.moveSpeed):a.orientation===Types.Orientations.DOWN&&a.movement.start(this.game.currentTime,function(b){a.y=b,a.hasMoved()},function(){a.y=a.movement.endValue,a.hasMoved(),a.nextStep()},a.y+c,a.y+16,a.moveSpeed))},updateAnimations:function(){var a=this.game.currentTime;this.game.forEachEntity(function(b){var c=b.currentAnimation;c&&c.update(a)&&b.setDirty()});var b=this.game.sparksAnimation;b&&b.update(a);var c=this.game.targetAnimation;c&&c.update(a)},updateAnimatedTiles:function(){var a=this,b=this.game.currentTime;this.game.forEachAnimatedTile(function(c){c.animate(b)&&(c.isDirty=!0,c.dirtyRect=a.game.renderer.getTileBoundingRect(c),(a.game.renderer.mobile||a.game.renderer.tablet)&&a.game.checkOtherDirtyRects(c.dirtyRect,c,c.x,c.y))})},updateChatBubbles:function(){var a=this.game.currentTime;this.game.bubbleManager.update(a)},updateInfos:function(){var a=this.game.currentTime;this.game.infoManager.update(a)}});return c})
+
+define(['character', 'timer'], function(Character, Timer) {
+
+    var Updater = Class.extend({
+        init: function(game) {
+            this.game = game;
+            this.playerAggroTimer = new Timer(1000);
+        },
+
+        update: function() {
+            this.updateZoning();
+            this.updateCharacters();
+            this.updatePlayerAggro();
+            this.updateTransitions();
+            this.updateAnimations();
+            this.updateAnimatedTiles();
+            this.updateChatBubbles();
+            this.updateInfos();
+        },
+
+        updateCharacters: function() {
+            var self = this;
+        
+            this.game.forEachEntity(function(entity) {
+                var isCharacter = entity instanceof Character;
+            
+                if(entity.isLoaded) {
+                    if(isCharacter) {
+                        self.updateCharacter(entity);
+                        self.game.onCharacterUpdate(entity);
+                    }
+                    self.updateEntityFading(entity);
+                }
+            });
+        },
+        
+        updatePlayerAggro: function() {
+            var t = this.game.currentTime,
+                player = this.game.player;
+            
+            // Check player aggro every 1s when not moving nor attacking
+            if(player && !player.isMoving() && !player.isAttacking()  && this.playerAggroTimer.isOver(t)) {
+                player.checkAggro();
+            }
+        },
+    
+        updateEntityFading: function(entity) {
+            if(entity && entity.isFading) {
+                var duration = 1000,
+                    t = this.game.currentTime,
+                    dt = t - entity.startFadingTime;
+            
+                if(dt > duration) {
+                    this.isFading = false;
+                    entity.fadingAlpha = 1;
+                } else {
+                    entity.fadingAlpha = dt / duration;
+                }
+            }
+        },
+
+        updateTransitions: function() {
+            var self = this,
+                m = null,
+                z = this.game.currentZoning;
+    
+            this.game.forEachEntity(function(entity) {
+                m = entity.movement;
+                if(m) {
+                    if(m.inProgress) {
+                        m.step(self.game.currentTime);
+                    }
+                }
+            });
+        
+            if(z) {
+                if(z.inProgress) {
+                    z.step(this.game.currentTime);
+                }
+            }
+        },
+    
+        updateZoning: function() {
+            var g = this.game,
+                c = g.camera,
+                z = g.currentZoning,
+                s = 3,
+                ts = 16,
+                speed = 500;
+        
+            if(z && z.inProgress === false) {
+                var orientation = this.game.zoningOrientation,
+                    startValue = endValue = offset = 0,
+                    updateFunc = null,
+                    endFunc = null;
+            
+                if(orientation === Types.Orientations.LEFT || orientation === Types.Orientations.RIGHT) {
+                    offset = (c.gridW - 2) * ts;
+                    startValue = (orientation === Types.Orientations.LEFT) ? c.x - ts : c.x + ts;
+                    endValue = (orientation === Types.Orientations.LEFT) ? c.x - offset : c.x + offset;
+                    updateFunc = function(x) {
+                        c.setPosition(x, c.y);
+                        g.initAnimatedTiles();
+                        g.renderer.renderStaticCanvases();
+                    }
+                    endFunc = function() {
+                        c.setPosition(z.endValue, c.y);
+                        g.endZoning();
+                    }
+                } else if(orientation === Types.Orientations.UP || orientation === Types.Orientations.DOWN) {
+                    offset = (c.gridH - 2) * ts;
+                    startValue = (orientation === Types.Orientations.UP) ? c.y - ts : c.y + ts;
+                    endValue = (orientation === Types.Orientations.UP) ? c.y - offset : c.y + offset;
+                    updateFunc = function(y) { 
+                        c.setPosition(c.x, y);
+                        g.initAnimatedTiles();
+                        g.renderer.renderStaticCanvases();
+                    }
+                    endFunc = function() {
+                        c.setPosition(c.x, z.endValue);
+                        g.endZoning();
+                    }
+                }
+            
+                z.start(this.game.currentTime, updateFunc, endFunc, startValue, endValue, speed);
+            }
+        },
+
+        updateCharacter: function(c) {
+            var self = this;
+    
+            // Estimate of the movement distance for one update
+            var tick = Math.round(16 / Math.round((c.moveSpeed / (1000 / this.game.renderer.FPS))));
+    
+            if(c.isMoving() && c.movement.inProgress === false) {
+                if(c.orientation === Types.Orientations.LEFT) {
+                    c.movement.start(this.game.currentTime,
+                                     function(x) {
+                                        c.x = x;
+                                        c.hasMoved();
+                                     },
+                                     function() {
+                                        c.x = c.movement.endValue;
+                                        c.hasMoved();
+                                        c.nextStep();
+                                     },
+                                     c.x - tick,
+                                     c.x - 16,
+                                     c.moveSpeed);
+                }
+                else if(c.orientation === Types.Orientations.RIGHT) {
+                    c.movement.start(this.game.currentTime,
+                                     function(x) {
+                                        c.x = x;
+                                        c.hasMoved();
+                                     },
+                                     function() {
+                                        c.x = c.movement.endValue;
+                                        c.hasMoved();
+                                        c.nextStep();
+                                     },
+                                     c.x + tick,
+                                     c.x + 16,
+                                     c.moveSpeed);
+                }
+                else if(c.orientation === Types.Orientations.UP) {
+                    c.movement.start(this.game.currentTime,
+                                     function(y) {
+                                        c.y = y;
+                                        c.hasMoved();
+                                     },
+                                     function() {
+                                        c.y = c.movement.endValue;
+                                        c.hasMoved();
+                                        c.nextStep();
+                                     },
+                                     c.y - tick,
+                                     c.y - 16,
+                                     c.moveSpeed);
+                }
+                else if(c.orientation === Types.Orientations.DOWN) {
+                    c.movement.start(this.game.currentTime,
+                                     function(y) {
+                                        c.y = y;
+                                        c.hasMoved();
+                                     },
+                                     function() {
+                                        c.y = c.movement.endValue;
+                                        c.hasMoved();
+                                        c.nextStep();
+                                     },
+                                     c.y + tick,
+                                     c.y + 16,
+                                     c.moveSpeed);
+                }
+            }
+        },
+
+        updateAnimations: function() {
+            var t = this.game.currentTime;
+    
+            this.game.forEachEntity(function(entity) {
+                var anim = entity.currentAnimation;
+                
+                if(anim) {
+                    if(anim.update(t)) {
+                        entity.setDirty();
+                    }
+                }
+            });
+        
+            var sparks = this.game.sparksAnimation;
+            if(sparks) {
+                sparks.update(t);
+            }
+    
+            var target = this.game.targetAnimation;
+            if(target) {
+                target.update(t);
+            }
+        },
+    
+        updateAnimatedTiles: function() {
+            var self = this,
+                t = this.game.currentTime;
+        
+            this.game.forEachAnimatedTile(function (tile) {
+                if(tile.animate(t)) {
+                    tile.isDirty = true;
+                    tile.dirtyRect = self.game.renderer.getTileBoundingRect(tile);
+
+                    if(self.game.renderer.mobile || self.game.renderer.tablet) {
+                        self.game.checkOtherDirtyRects(tile.dirtyRect, tile, tile.x, tile.y);
+                    }
+                }
+            });
+        },
+    
+        updateChatBubbles: function() {
+            var t = this.game.currentTime;
+        
+            this.game.bubbleManager.update(t);
+        },
+    
+        updateInfos: function() {
+            var t = this.game.currentTime;
+        
+            this.game.infoManager.update(t);
+        }
+    });
+    
+    return Updater;
+});

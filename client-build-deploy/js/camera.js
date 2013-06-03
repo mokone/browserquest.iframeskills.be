@@ -1,1 +1,83 @@
-define(function(){var a=Class.extend({init:function(a){this.renderer=a,this.x=0,this.y=0,this.gridX=0,this.gridY=0,this.offset=.5,this.rescale()},rescale:function(){var a=this.renderer.mobile?1:2;this.gridW=15*a,this.gridH=7*a,log.debug("---------"),log.debug("Factor:"+a),log.debug("W:"+this.gridW+" H:"+this.gridH)},setPosition:function(a,b){this.x=a,this.y=b,this.gridX=Math.floor(a/16),this.gridY=Math.floor(b/16)},setGridPosition:function(a,b){this.gridX=a,this.gridY=b,this.x=this.gridX*16,this.y=this.gridY*16},lookAt:function(a){var b=this.renderer,c=Math.round(a.x-Math.floor(this.gridW/2)*b.tilesize),d=Math.round(a.y-Math.floor(this.gridH/2)*b.tilesize);this.setPosition(c,d)},forEachVisiblePosition:function(a,b){var b=b||0;for(var c=this.gridY-b,d=this.gridY+this.gridH+b*2;c<d;c+=1)for(var e=this.gridX-b,f=this.gridX+this.gridW+b*2;e<f;e+=1)a(e,c)},isVisible:function(a){return this.isVisiblePosition(a.gridX,a.gridY)},isVisiblePosition:function(a,b){return b>=this.gridY&&b<this.gridY+this.gridH&&a>=this.gridX&&a<this.gridX+this.gridW?!0:!1},focusEntity:function(a){var b=this.gridW-2,c=this.gridH-2,d=Math.floor((a.gridX-1)/b)*b,e=Math.floor((a.gridY-1)/c)*c;this.setGridPosition(d,e)}});return a})
+
+define(function() {
+
+    var Camera = Class.extend({
+        init: function(renderer) {
+            this.renderer = renderer;
+            this.x = 0;
+            this.y = 0;
+            this.gridX = 0;
+            this.gridY = 0;
+            this.offset = 0.5;
+            this.rescale();
+        },
+    
+        rescale: function() {
+            var factor = this.renderer.mobile ? 1 : 2;
+        
+            this.gridW = 15 * factor;
+            this.gridH = 7 * factor;
+        
+            log.debug("---------");
+            log.debug("Factor:"+factor);
+            log.debug("W:"+this.gridW + " H:" + this.gridH);
+        },
+
+        setPosition: function(x, y) {
+            this.x = x;
+            this.y = y;
+    
+            this.gridX = Math.floor( x / 16 );
+            this.gridY = Math.floor( y / 16 );
+        },
+
+        setGridPosition: function(x, y) {
+            this.gridX = x;
+            this.gridY = y;
+        
+            this.x = this.gridX * 16;
+            this.y = this.gridY * 16;
+        },
+
+        lookAt: function(entity) {
+            var r = this.renderer,
+                x = Math.round( entity.x - (Math.floor(this.gridW / 2) * r.tilesize) ),
+                y = Math.round( entity.y - (Math.floor(this.gridH / 2) * r.tilesize) );
+    
+            this.setPosition(x, y);
+        },
+
+        forEachVisiblePosition: function(callback, extra) {
+            var extra = extra || 0;
+            for(var y=this.gridY-extra, maxY=this.gridY+this.gridH+(extra*2); y < maxY; y += 1) {
+                for(var x=this.gridX-extra, maxX=this.gridX+this.gridW+(extra*2); x < maxX; x += 1) {
+                    callback(x, y);
+                }
+            }
+        },
+        
+        isVisible: function(entity) {
+            return this.isVisiblePosition(entity.gridX, entity.gridY);
+        },
+        
+        isVisiblePosition: function(x, y) {
+            if(y >= this.gridY && y < this.gridY + this.gridH
+            && x >= this.gridX && x < this.gridX + this.gridW) {
+                return true;
+            } else {
+                return false;
+            }
+        },
+    
+        focusEntity: function(entity) {
+            var w = this.gridW - 2,
+                h = this.gridH - 2,
+                x = Math.floor((entity.gridX - 1) / w) * w,
+                y = Math.floor((entity.gridY - 1) / h) * h;
+
+            this.setGridPosition(x, y);
+        }
+    });
+
+    return Camera;
+});

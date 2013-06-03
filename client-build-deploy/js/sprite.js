@@ -1,1 +1,169 @@
-define(["jquery","animation","sprites"],function(a,b,c){var d=Class.extend({init:function(a,b){this.name=a,this.scale=b,this.isLoaded=!1,this.offsetX=0,this.offsetY=0,this.loadJSON(c[a])},loadJSON:function(a){this.id=a.id,this.filepath="img/"+this.scale+"/"+this.id+".png",this.animationData=a.animations,this.width=a.width,this.height=a.height,this.offsetX=a.offset_x!==undefined?a.offset_x:-16,this.offsetY=a.offset_y!==undefined?a.offset_y:-16,this.load()},load:function(){var a=this;this.image=new Image,this.image.src=this.filepath,this.image.onload=function(){a.isLoaded=!0,a.onload_func&&a.onload_func()}},createAnimations:function(){var a={};for(var c in this.animationData){var d=this.animationData[c];a[c]=new b(c,d.length,d.row,this.width,this.height)}return a},createHurtSprite:function(){var a=document.createElement("canvas"),b=a.getContext("2d"),c=this.image.width,d=this.image.height,e,f;a.width=c,a.height=d,b.drawImage(this.image,0,0,c,d);try{e=b.getImageData(0,0,c,d),f=e.data;for(var g=0;g<f.length;g+=4)f[g]=255,f[g+1]=f[g+2]=75;e.data=f,b.putImageData(e,0,0),this.whiteSprite={image:a,isLoaded:!0,offsetX:this.offsetX,offsetY:this.offsetY,width:this.width,height:this.height}}catch(h){log.error("Error getting image data for sprite : "+this.name)}},getHurtSprite:function(){return this.whiteSprite},createSilhouette:function(){var a=document.createElement("canvas"),b=a.getContext("2d"),c=this.image.width,d=this.image.height,e,f,g;a.width=c,a.height=d,b.drawImage(this.image,0,0,c,d),g=b.getImageData(0,0,c,d).data,f=b.getImageData(0,0,c,d),fdata=f.data;var h=function(a,b){return(c*(b-1)+a-1)*4},i=function(a){var b,d;a=a/4+1,b=a%c,d=(a-b)/c+1;return{x:b,y:d}},j=function(a){var b=i(a);return b.x<c&&!k(h(b.x+1,b.y))?!0:b.x>1&&!k(h(b.x-1,b.y))?!0:b.y<d&&!k(h(b.x,b.y+1))?!0:b.y>1&&!k(h(b.x,b.y-1))?!0:!1},k=function(a){return a<0||a>=g.length?!0:g[a]===0&&g[a+1]===0&&g[a+2]===0&&g[a+3]===0};for(var l=0;l<g.length;l+=4)k(l)&&j(l)&&(fdata[l]=fdata[l+1]=255,fdata[l+2]=150,fdata[l+3]=150);f.data=fdata,b.putImageData(f,0,0),this.silhouetteSprite={image:a,isLoaded:!0,offsetX:this.offsetX,offsetY:this.offsetY,width:this.width,height:this.height}}});return d})
+
+define(['jquery', 'animation', 'sprites'], function($, Animation, sprites) {
+
+    var Sprite = Class.extend({
+        init: function(name, scale) {
+        	this.name = name;
+        	this.scale = scale;
+        	this.isLoaded = false;
+        	this.offsetX = 0;
+        	this.offsetY = 0;
+            this.loadJSON(sprites[name]);
+        },
+        
+        loadJSON: function(data) {
+    		this.id = data.id;
+    		this.filepath = "img/" + this.scale + "/" + this.id + ".png";
+    		this.animationData = data.animations;
+    		this.width = data.width;
+    		this.height = data.height;
+    		this.offsetX = (data.offset_x !== undefined) ? data.offset_x : -16;
+            this.offsetY = (data.offset_y !== undefined) ? data.offset_y : -16;
+	
+    		this.load();
+    	},
+
+        load: function() {
+        	var self = this;
+
+        	this.image = new Image();
+        	this.image.src = this.filepath;
+
+        	this.image.onload = function() {
+        		self.isLoaded = true;
+    		    
+                if(self.onload_func) {
+                    self.onload_func();
+                }
+        	};
+        },
+    
+        createAnimations: function() {
+            var animations = {};
+        
+    	    for(var name in this.animationData) {
+    	        var a = this.animationData[name];
+    	        animations[name] = new Animation(name, a.length, a.row, this.width, this.height);
+    	    }
+	    
+    	    return animations;
+    	},
+	
+    	createHurtSprite: function() {
+    	    var canvas = document.createElement('canvas'),
+    	        ctx = canvas.getContext('2d'),
+    	        width = this.image.width,
+    		    height = this.image.height,
+    	        spriteData, data;
+    
+    	    canvas.width = width;
+    	    canvas.height = height;
+    	    ctx.drawImage(this.image, 0, 0, width, height);
+    	    
+    	    try {
+        	    spriteData = ctx.getImageData(0, 0, width, height);
+
+        	    data = spriteData.data;
+
+        	    for(var i=0; i < data.length; i += 4) {
+        	        data[i] = 255;
+        	        data[i+1] = data[i+2] = 75;
+        	    }
+        	    spriteData.data = data;
+
+        	    ctx.putImageData(spriteData, 0, 0);
+
+        	    this.whiteSprite = { 
+                    image: canvas,
+            	    isLoaded: true,
+            	    offsetX: this.offsetX,
+            	    offsetY: this.offsetY,
+            	    width: this.width,
+            	    height: this.height
+            	};
+    	    } catch(e) {
+    	        log.error("Error getting image data for sprite : "+this.name);
+    	    }
+        },
+	
+    	getHurtSprite: function() {
+    	    return this.whiteSprite;
+    	},
+	
+    	createSilhouette: function() {
+    	    var canvas = document.createElement('canvas'),
+    	        ctx = canvas.getContext('2d'),
+    	        width = this.image.width,
+    		    height = this.image.height,
+    	        spriteData, finalData, data;
+	    
+    	    canvas.width = width;
+    	    canvas.height = height;
+    	    ctx.drawImage(this.image, 0, 0, width, height);
+    	    data = ctx.getImageData(0, 0, width, height).data;
+    	    finalData = ctx.getImageData(0, 0, width, height);
+    	    fdata = finalData.data;
+	    
+    	    var getIndex = function(x, y) {
+    	        return ((width * (y-1)) + x - 1) * 4;
+    	    };
+	    
+    	    var getPosition = function(i) {
+    	        var x, y;
+	        
+    	        i = (i / 4) + 1;
+    	        x = i % width;
+    	        y = ((i - x) / width) + 1;
+	        
+    	        return { x: x, y: y };
+    	    };
+	    
+    	    var hasAdjacentPixel = function(i) {
+    	        var pos = getPosition(i);
+	        
+    	        if(pos.x < width && !isBlankPixel(getIndex(pos.x + 1, pos.y))) {
+    	            return true;
+    	        }
+    	        if(pos.x > 1 && !isBlankPixel(getIndex(pos.x - 1, pos.y))) {
+        	        return true;
+    	        }
+    	        if(pos.y < height && !isBlankPixel(getIndex(pos.x, pos.y + 1))) {
+        	        return true;
+    	        }
+    	        if(pos.y > 1 && !isBlankPixel(getIndex(pos.x, pos.y - 1))) {
+        	        return true;
+    	        }
+    	        return false;
+    	    };
+	    
+    	    var isBlankPixel = function(i) {
+    	        if(i < 0 || i >= data.length) {
+    	            return true;
+    	        }
+    	        return data[i] === 0 && data[i+1] === 0 && data[i+2] === 0 && data[i+3] === 0;
+    	    };
+	    
+    	    for(var i=0; i < data.length; i += 4) {
+    	        if(isBlankPixel(i) && hasAdjacentPixel(i)) {
+    	            fdata[i] = fdata[i+1] = 255;
+    	            fdata[i+2] = 150;
+    	            fdata[i+3] = 150;
+    	        }
+    	    }
+
+    	    finalData.data = fdata;
+    	    ctx.putImageData(finalData, 0, 0);
+	    
+    	    this.silhouetteSprite = { 
+                image: canvas,
+        	    isLoaded: true,
+        	    offsetX: this.offsetX,
+        	    offsetY: this.offsetY,
+        	    width: this.width,
+        	    height: this.height
+        	};
+    	}
+    });
+
+    return Sprite;
+});

@@ -1,1 +1,168 @@
-define(function(){var a=Class.extend({init:function(){this.hasLocalStorage()&&localStorage.data?this.data=JSON.parse(localStorage.data):this.resetData()},resetData:function(){this.data={hasAlreadyPlayed:!1,player:{name:"",weapon:"",armor:"",image:""},achievements:{unlocked:[],ratCount:0,skeletonCount:0,totalKills:0,totalDmg:0,totalRevives:0}}},hasLocalStorage:function(){return Modernizr.localstorage},save:function(){this.hasLocalStorage()&&(localStorage.data=JSON.stringify(this.data))},clear:function(){this.hasLocalStorage()&&(localStorage.data="",this.resetData())},hasAlreadyPlayed:function(){return this.data.hasAlreadyPlayed},initPlayer:function(a){this.data.hasAlreadyPlayed=!0,this.setPlayerName(a)},setPlayerName:function(a){this.data.player.name=a,this.save()},setPlayerImage:function(a){this.data.player.image=a,this.save()},setPlayerArmor:function(a){this.data.player.armor=a,this.save()},setPlayerWeapon:function(a){this.data.player.weapon=a,this.save()},savePlayer:function(a,b,c){this.setPlayerImage(a),this.setPlayerArmor(b),this.setPlayerWeapon(c)},hasUnlockedAchievement:function(a){return _.include(this.data.achievements.unlocked,a)},unlockAchievement:function(a){if(!this.hasUnlockedAchievement(a)){this.data.achievements.unlocked.push(a),this.save();return!0}return!1},getAchievementCount:function(){return _.size(this.data.achievements.unlocked)},getRatCount:function(){return this.data.achievements.ratCount},incrementRatCount:function(){this.data.achievements.ratCount<10&&(this.data.achievements.ratCount++,this.save())},getSkeletonCount:function(){return this.data.achievements.skeletonCount},incrementSkeletonCount:function(){this.data.achievements.skeletonCount<10&&(this.data.achievements.skeletonCount++,this.save())},getTotalDamageTaken:function(){return this.data.achievements.totalDmg},addDamage:function(a){this.data.achievements.totalDmg<5e3&&(this.data.achievements.totalDmg+=a,this.save())},getTotalKills:function(){return this.data.achievements.totalKills},incrementTotalKills:function(){this.data.achievements.totalKills<50&&(this.data.achievements.totalKills++,this.save())},getTotalRevives:function(){return this.data.achievements.totalRevives},incrementRevives:function(){this.data.achievements.totalRevives<5&&(this.data.achievements.totalRevives++,this.save())}});return a})
+
+define(function() {
+
+    var Storage = Class.extend({
+        init: function() {
+            if(this.hasLocalStorage() && localStorage.data) {
+                this.data = JSON.parse(localStorage.data);
+            } else {
+                this.resetData();
+            }
+        },
+    
+        resetData: function() {
+            this.data = {
+                hasAlreadyPlayed: false,
+                player: {
+                    name: "",
+                    weapon: "",
+                    armor: "",
+                    image: ""
+                },
+                achievements: {
+                    unlocked: [],
+                    ratCount: 0,
+                    skeletonCount: 0,
+                    totalKills: 0,
+                    totalDmg: 0,
+                    totalRevives: 0
+                }
+            };
+        },
+    
+        hasLocalStorage: function() {
+            return Modernizr.localstorage;
+        },
+    
+        save: function() {
+            if(this.hasLocalStorage()) {
+                localStorage.data = JSON.stringify(this.data);
+            }
+        },
+    
+        clear: function() {
+            if(this.hasLocalStorage()) {
+                localStorage.data = "";
+                this.resetData();
+            }
+        },
+    
+        // Player
+    
+        hasAlreadyPlayed: function() {
+            return this.data.hasAlreadyPlayed;
+        },
+    
+        initPlayer: function(name) {
+            this.data.hasAlreadyPlayed = true;
+            this.setPlayerName(name);
+        },
+        
+        setPlayerName: function(name) {
+            this.data.player.name = name;
+            this.save();
+        },
+    
+        setPlayerImage: function(img) {
+            this.data.player.image = img;
+            this.save();
+        },
+
+        setPlayerArmor: function(armor) {
+            this.data.player.armor = armor;
+            this.save();
+        },
+    
+        setPlayerWeapon: function(weapon) {
+            this.data.player.weapon = weapon;
+            this.save();
+        },
+
+        savePlayer: function(img, armor, weapon) {
+            this.setPlayerImage(img);
+            this.setPlayerArmor(armor);
+            this.setPlayerWeapon(weapon);
+        },
+    
+        // Achievements
+    
+        hasUnlockedAchievement: function(id) {
+            return _.include(this.data.achievements.unlocked, id);
+        },
+    
+        unlockAchievement: function(id) {
+            if(!this.hasUnlockedAchievement(id)) {
+                this.data.achievements.unlocked.push(id);
+                this.save();
+                return true;
+            }
+            return false;
+        },
+    
+        getAchievementCount: function() {
+            return _.size(this.data.achievements.unlocked);
+        },
+    
+        // Angry rats
+        getRatCount: function() {
+            return this.data.achievements.ratCount;
+        },
+    
+        incrementRatCount: function() {
+            if(this.data.achievements.ratCount < 10) {
+                this.data.achievements.ratCount++;
+                this.save();
+            }
+        },
+        
+        // Skull Collector
+        getSkeletonCount: function() {
+            return this.data.achievements.skeletonCount;
+        },
+
+        incrementSkeletonCount: function() {
+            if(this.data.achievements.skeletonCount < 10) {
+                this.data.achievements.skeletonCount++;
+                this.save();
+            }
+        },
+    
+        // Meatshield
+        getTotalDamageTaken: function() {
+            return this.data.achievements.totalDmg;
+        },
+    
+        addDamage: function(damage) {
+            if(this.data.achievements.totalDmg < 5000) {
+                this.data.achievements.totalDmg += damage;
+                this.save();
+            }
+        },
+        
+        // Hunter
+        getTotalKills: function() {
+            return this.data.achievements.totalKills;
+        },
+
+        incrementTotalKills: function() {
+            if(this.data.achievements.totalKills < 50) {
+                this.data.achievements.totalKills++;
+                this.save();
+            }
+        },
+    
+        // Still Alive
+        getTotalRevives: function() {
+            return this.data.achievements.totalRevives;
+        },
+    
+        incrementRevives: function() {
+            if(this.data.achievements.totalRevives < 5) {
+                this.data.achievements.totalRevives++;
+                this.save();
+            }
+        },
+    });
+    
+    return Storage;
+});

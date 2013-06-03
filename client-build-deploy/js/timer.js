@@ -1,1 +1,22 @@
-define(function(){var a=Class.extend({init:function(a,b){this.lastTime=b||0,this.duration=a},isOver:function(a){var b=!1;a-this.lastTime>this.duration&&(b=!0,this.lastTime=a);return b}});return a})
+
+define(function() {
+
+    var Timer = Class.extend({
+        init: function(duration, startTime) {
+            this.lastTime = startTime || 0;
+            this.duration = duration;
+        },
+
+        isOver: function(time) {
+            var over = false;
+       
+            if((time - this.lastTime) > this.duration) {
+                over = true;
+                this.lastTime = time;
+            }
+            return over;
+        }
+    });
+
+    return Timer;
+});

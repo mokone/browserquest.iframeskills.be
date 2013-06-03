@@ -1,1 +1,309 @@
-define(["jquery","area"],function(a,b){var c=Class.extend({init:function(a,b){this.game=b,this.data=[],this.isLoaded=!1,this.tilesetsLoaded=!1,this.mapLoaded=!1,this.loadMultiTilesheets=a;var c=!this.game.renderer.mobile&&!this.game.renderer.tablet;this._loadMap(c),this._initTilesets()},_checkReady:function(){this.tilesetsLoaded&&this.mapLoaded&&(this.isLoaded=!0,this.ready_func&&this.ready_func())},_loadMap:function(b){var c=this,d="maps/world_client.json";if(b){log.info("Loading map with web worker.");var e=new Worker("js/mapworker.js");e.postMessage(1),e.onmessage=function(a){var b=a.data;c._initMap(b),c.grid=b.grid,c.plateauGrid=b.plateauGrid,c.mapLoaded=!0,c._checkReady()}}else log.info("Loading map via Ajax."),a.get(d,function(a){c._initMap(a),c._generateCollisionGrid(),c._generatePlateauGrid(),c.mapLoaded=!0,c._checkReady()},"json")},_initTilesets:function(){var a,b,c;this.loadMultiTilesheets?this.game.renderer.mobile||this.game.renderer.tablet?(this.tilesetCount=1,b=this._loadTileset("img/2/tilesheet.png")):(this.tilesetCount=2,b=this._loadTileset("img/2/tilesheet.png"),c=this._loadTileset("img/3/tilesheet.png")):(this.tilesetCount=1,a=this._loadTileset("img/1/tilesheet.png")),this.tilesets=[a,b,c]},_initMap:function(a){this.width=a.width,this.height=a.height,this.tilesize=a.tilesize,this.data=a.data,this.blocking=a.blocking||[],this.plateau=a.plateau||[],this.musicAreas=a.musicAreas||[],this.collisions=a.collisions,this.high=a.high,this.animated=a.animated,this.doors=this._getDoors(a),this.checkpoints=this._getCheckpoints(a)},_getDoors:function(a){var b={},c=this;_.each(a.doors,function(a){var d;switch(a.to){case"u":d=Types.Orientations.UP;break;case"d":d=Types.Orientations.DOWN;break;case"l":d=Types.Orientations.LEFT;break;case"r":d=Types.Orientations.RIGHT;break;default:d=Types.Orientations.DOWN}b[c.GridPositionToTileIndex(a.x,a.y)]={x:a.tx,y:a.ty,orientation:d,cameraX:a.tcx,cameraY:a.tcy,portal:a.p===1}});return b},_loadTileset:function(a){var b=this,c=new Image;c.src=a,log.info("Loading tileset: "+a),c.onload=function(){if(c.width%b.tilesize>0)throw Error("Tileset size should be a multiple of "+b.tilesize);log.info("Map tileset loaded."),b.tilesetCount-=1,b.tilesetCount===0&&(log.debug("All map tilesets loaded."),b.tilesetsLoaded=!0,b._checkReady())};return c},ready:function(a){this.ready_func=a},tileIndexToGridPosition:function(a){var b=0,c=0,d=function(a,b){return a==0?0:a%b==0?b-1:a%b-1};a-=1,b=d(a+1,this.width),c=Math.floor(a/this.width);return{x:b,y:c}},GridPositionToTileIndex:function(a,b){return b*this.width+a+1},isColliding:function(a,b){return this.isOutOfBounds(a,b)||!this.grid?!1:this.grid[b][a]===1},isPlateau:function(a,b){return this.isOutOfBounds(a,b)||!this.plateauGrid?!1:this.plateauGrid[b][a]===1},_generateCollisionGrid:function(){var a=0,b=this;this.grid=[];for(var c,d=0;d<this.height;d++){this.grid[d]=[];for(c=0;c<this.width;c++)this.grid[d][c]=0}_.each(this.collisions,function(a){var c=b.tileIndexToGridPosition(a+1);b.grid[c.y][c.x]=1}),_.each(this.blocking,function(a){var c=b.tileIndexToGridPosition(a+1);b.grid[c.y]!==undefined&&(b.grid[c.y][c.x]=1)}),log.info("Collision grid generated.")},_generatePlateauGrid:function(){var a=0;this.plateauGrid=[];for(var b,c=0;c<this.height;c++){this.plateauGrid[c]=[];for(b=0;b<this.width;b++)_.include(this.plateau,a)?this.plateauGrid[c][b]=1:this.plateauGrid[c][b]=0,a+=1}log.info("Plateau grid generated.")},isOutOfBounds:function(a,b){return isInt(a)&&isInt(b)&&(a<0||a>=this.width||b<0||b>=this.height)},isHighTile:function(a){return _.indexOf(this.high,a+1)>=0},isAnimatedTile:function(a){return a+1 in this.animated},getTileAnimationLength:function(a){return this.animated[a+1].l},getTileAnimationDelay:function(a){var b=this.animated[a+1];return b.d?b.d:100},isDoor:function(a,b){return this.doors[this.GridPositionToTileIndex(a,b)]!==undefined},getDoorDestination:function(a,b){return this.doors[this.GridPositionToTileIndex(a,b)]},_getCheckpoints:function(a){var c=[];_.each(a.checkpoints,function(a){var d=new b(a.x,a.y,a.w,a.h);d.id=a.id,c.push(d)});return c},getCurrentCheckpoint:function(a){return _.detect(this.checkpoints,function(b){return b.contains(a)})}});return c})
+
+define(['jquery', 'area'], function($, Area) {
+    
+    var Map = Class.extend({
+        init: function(loadMultiTilesheets, game) {
+            this.game = game;
+        	this.data = [];
+        	this.isLoaded = false;
+        	this.tilesetsLoaded = false;
+        	this.mapLoaded = false;
+        	this.loadMultiTilesheets = loadMultiTilesheets;
+        	
+        	var useWorker = !(this.game.renderer.mobile || this.game.renderer.tablet);
+
+        	this._loadMap(useWorker);
+        	this._initTilesets();
+        },
+        
+        _checkReady: function() {
+            if(this.tilesetsLoaded && this.mapLoaded) {
+                this.isLoaded = true;
+                if(this.ready_func) {
+        	    	this.ready_func();
+        	    }
+        	}
+        },
+
+        _loadMap: function(useWorker) {
+        	var self = this,
+        	    filepath = "maps/world_client.json";
+        	
+        	if(useWorker) {
+        	    log.info("Loading map with web worker.");
+                var worker = new Worker('js/mapworker.js');
+                worker.postMessage(1);
+            
+                worker.onmessage = function(event) {
+                    var map = event.data;
+                    self._initMap(map);
+                    self.grid = map.grid;
+                    self.plateauGrid = map.plateauGrid;
+                    self.mapLoaded = true;
+                    self._checkReady();
+                };
+            } else {
+                log.info("Loading map via Ajax.");
+                $.get(filepath, function (data) {
+                    self._initMap(data);
+                    self._generateCollisionGrid();
+                    self._generatePlateauGrid();
+                    self.mapLoaded = true;
+                    self._checkReady();
+                }, 'json');
+            }        
+        },
+        
+        _initTilesets: function() {
+            var tileset1, tileset2, tileset3;
+            
+            if(!this.loadMultiTilesheets) {
+                this.tilesetCount = 1;
+                tileset1 = this._loadTileset('img/1/tilesheet.png');
+            } else {
+                if(this.game.renderer.mobile || this.game.renderer.tablet) {
+                    this.tilesetCount = 1;
+                    tileset2 = this._loadTileset('img/2/tilesheet.png');
+                } else {
+                    this.tilesetCount = 2;
+                    tileset2 = this._loadTileset('img/2/tilesheet.png');
+                    tileset3 = this._loadTileset('img/3/tilesheet.png');
+                }
+            }
+        
+            this.tilesets = [tileset1, tileset2, tileset3];
+        },
+
+        _initMap: function(map) {
+            this.width = map.width;
+            this.height = map.height;
+            this.tilesize = map.tilesize;
+            this.data = map.data;
+            this.blocking = map.blocking || [];
+            this.plateau = map.plateau || [];
+            this.musicAreas = map.musicAreas || [];
+            this.collisions = map.collisions;
+            this.high = map.high;
+            this.animated = map.animated;
+            
+            this.doors = this._getDoors(map);
+            this.checkpoints = this._getCheckpoints(map);
+        },
+    
+        _getDoors: function(map) {
+            var doors = {},
+                self = this;
+
+            _.each(map.doors, function(door) {
+                var o;
+                
+                switch(door.to) {
+                    case 'u': o = Types.Orientations.UP;
+                        break;
+                    case 'd': o = Types.Orientations.DOWN;
+                        break;
+                    case 'l': o = Types.Orientations.LEFT;
+                        break;
+                    case 'r': o = Types.Orientations.RIGHT;
+                        break;
+                    default : o = Types.Orientations.DOWN;
+                }
+                
+                doors[self.GridPositionToTileIndex(door.x, door.y)] = {
+                    x: door.tx,
+                    y: door.ty,
+                    orientation: o,
+                    cameraX: door.tcx,
+                    cameraY: door.tcy,
+                    portal: door.p === 1,
+                };
+            });
+        
+            return doors;
+        },
+
+        _loadTileset: function(filepath) {
+        	var self = this;
+    	    var tileset = new Image();
+    	
+        	tileset.src = filepath;
+    
+            log.info("Loading tileset: "+filepath);
+    
+        	tileset.onload = function() {
+                if(tileset.width % self.tilesize > 0) {
+                    throw Error("Tileset size should be a multiple of "+ self.tilesize);
+                }
+                log.info("Map tileset loaded.");
+            
+                self.tilesetCount -= 1;
+                if(self.tilesetCount === 0) {
+                    log.debug("All map tilesets loaded.")
+                    
+            		self.tilesetsLoaded = true;
+            		self._checkReady();
+            	}
+        	};
+    	
+        	return tileset;
+        },
+
+        ready: function(f) {
+        	this.ready_func = f;
+        },
+
+        tileIndexToGridPosition: function(tileNum) {
+            var x = 0,
+                y = 0;
+        
+            var getX = function(num, w) {
+                if(num == 0) {
+                    return 0;
+                }
+                return (num % w == 0) ? w - 1 : (num % w) - 1;
+            }
+    
+            tileNum -= 1;
+            x = getX(tileNum + 1, this.width);
+            y = Math.floor(tileNum / this.width);
+    
+            return { x: x, y: y };
+        },
+
+        GridPositionToTileIndex: function(x, y) {
+            return (y * this.width) + x + 1;
+        },
+
+        isColliding: function(x, y) { 
+            if(this.isOutOfBounds(x, y) || !this.grid) {
+                return false;
+            }
+            return (this.grid[y][x] === 1);
+        },
+    
+        isPlateau: function(x, y) { 
+            if(this.isOutOfBounds(x, y) || !this.plateauGrid) {
+                return false;
+            }
+            return (this.plateauGrid[y][x] === 1);
+        },
+        
+        _generateCollisionGrid: function() {
+            var tileIndex = 0,
+                self = this;
+
+            this.grid = [];
+            for(var	j, i = 0; i < this.height; i++) {
+                this.grid[i] = [];
+                for(j = 0; j < this.width; j++) {
+                    this.grid[i][j] = 0;
+                }
+            }
+
+            _.each(this.collisions, function(tileIndex) {
+                var pos = self.tileIndexToGridPosition(tileIndex+1);
+                self.grid[pos.y][pos.x] = 1;
+            });
+
+            _.each(this.blocking, function(tileIndex) {
+                var pos = self.tileIndexToGridPosition(tileIndex+1);
+                if(self.grid[pos.y] !== undefined) {
+                    self.grid[pos.y][pos.x] = 1;
+                }
+            });
+            log.info("Collision grid generated.");
+        },
+
+        _generatePlateauGrid: function() {
+            var tileIndex = 0;
+
+            this.plateauGrid = [];
+            for(var	j, i = 0; i < this.height; i++) {
+                this.plateauGrid[i] = [];
+                for(j = 0; j < this.width; j++) {
+                    if(_.include(this.plateau, tileIndex)) {
+                        this.plateauGrid[i][j] = 1;
+                    } else {
+                        this.plateauGrid[i][j] = 0;
+                    }
+                    tileIndex += 1;
+                }
+            }
+            log.info("Plateau grid generated.");
+        },
+    
+        /**
+         * Returns true if the given position is located within the dimensions of the map.
+         *
+         * @returns {Boolean} Whether the position is out of bounds.
+         */
+        isOutOfBounds: function(x, y) {
+            return isInt(x) && isInt(y) && (x < 0 || x >= this.width || y < 0 || y >= this.height);
+        },
+    
+        /**
+         * Returns true if the given tile id is "high", i.e. above all entities.
+         * Used by the renderer to know which tiles to draw after all the entities 
+         * have been drawn.
+         *
+         * @param {Number} id The tile id in the tileset
+         * @see Renderer.drawHighTiles
+         */
+        isHighTile: function(id) {
+            return _.indexOf(this.high, id+1) >= 0;
+        },
+    
+        /**
+         * Returns true if the tile is animated. Used by the renderer.
+         * @param {Number} id The tile id in the tileset
+         */
+        isAnimatedTile: function(id) {
+            return id+1 in this.animated;
+        },
+    
+        /**
+         * 
+         */
+        getTileAnimationLength: function(id) {
+            return this.animated[id+1].l;
+        },
+    
+        /**
+         * 
+         */
+        getTileAnimationDelay: function(id) {
+            var animProperties = this.animated[id+1];
+            if(animProperties.d) {
+                return animProperties.d;
+            } else {
+                return 100;
+            }
+        },
+    
+        isDoor: function(x, y) {
+            return this.doors[this.GridPositionToTileIndex(x, y)] !== undefined;
+        },
+    
+        getDoorDestination: function(x, y) {
+            return this.doors[this.GridPositionToTileIndex(x, y)];
+        },
+
+        _getCheckpoints: function(map) {
+            var checkpoints = [];
+            _.each(map.checkpoints, function(cp) {
+                var area = new Area(cp.x, cp.y, cp.w, cp.h);
+                area.id = cp.id;
+                checkpoints.push(area);
+            });
+            return checkpoints;
+        },
+    
+        getCurrentCheckpoint: function(entity) {
+            return _.detect(this.checkpoints, function(checkpoint) {
+                return checkpoint.contains(entity);
+            });
+        }
+    });
+    
+    return Map;
+});

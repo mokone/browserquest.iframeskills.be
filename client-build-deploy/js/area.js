@@ -1,1 +1,25 @@
-define(function(){var a=Class.extend({init:function(a,b,c,d){this.x=a,this.y=b,this.width=c,this.height=d},contains:function(a){return a?a.gridX>=this.x&&a.gridY>=this.y&&a.gridX<this.x+this.width&&a.gridY<this.y+this.height:!1}});return a})
+
+define(function() {
+
+    var Area = Class.extend({
+        init: function(x, y, width, height) {
+            this.x = x;
+            this.y = y;
+            this.width = width;
+            this.height = height;
+        },
+    
+        contains: function(entity) {
+            if(entity) {
+                return entity.gridX >= this.x
+                    && entity.gridY >= this.y
+                    && entity.gridX < this.x + this.width
+                    && entity.gridY < this.y + this.height;
+            } else {
+                return false;
+            }
+        }
+    });
+    
+    return Area;
+});

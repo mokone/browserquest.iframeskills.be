@@ -1,1 +1,29 @@
-define(["entity"],function(a){var b=a.extend({init:function(a,b){this._super(a,Types.Entities.CHEST)},getSpriteName:function(){return"chest"},isMoving:function(){return!1},open:function(){this.open_callback&&this.open_callback()},onOpen:function(a){this.open_callback=a}});return b})
+
+define(['entity'], function(Entity) {
+
+    var Chest = Entity.extend({
+        init: function(id, kind) {
+    	    this._super(id, Types.Entities.CHEST);
+        },
+    
+        getSpriteName: function() {
+            return "chest";
+        },
+    
+        isMoving: function() {
+            return false;
+        },
+    
+        open: function() {
+            if(this.open_callback) {
+                this.open_callback();
+            }
+        },
+    
+        onOpen: function(callback) {
+            this.open_callback = callback;
+        }
+    });
+    
+    return Chest;
+});

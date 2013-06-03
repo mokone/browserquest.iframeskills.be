@@ -1,1 +1,102 @@
-define(["jquery","timer"],function(a,b){var c=Class.extend({init:function(a,c,d){this.id=a,this.element=c,this.timer=new b(5e3,d)},isOver:function(a){return this.timer.isOver(a)?!0:!1},destroy:function(){a(this.element).remove()},reset:function(a){this.timer.lastTime=a}}),d=Class.extend({init:function(a){this.container=a,this.bubbles={}},getBubbleById:function(a){return a in this.bubbles?this.bubbles[a]:null},create:function(b,d,e){if(this.bubbles[b])this.bubbles[b].reset(e),a("#"+b+" p").html(d);else{var f=a('<div id="'+b+'" class="bubble"><p>'+d+'</p><div class="thingy"></div></div>');a(f).appendTo(this.container),this.bubbles[b]=new c(b,f,e)}},update:function(a){var b=this,c=[];_.each(this.bubbles,function(b){b.isOver(a)&&(b.destroy(),c.push(b.id))}),_.each(c,function(a){delete b.bubbles[a]})},clean:function(){var a=this,b=[];_.each(this.bubbles,function(a){a.destroy(),b.push(a.id)}),_.each(b,function(b){delete a.bubbles[b]}),this.bubbles={}},destroyBubble:function(a){var b=this.getBubbleById(a);b&&(b.destroy(),delete this.bubbles[a])},forEachBubble:function(a){_.each(this.bubbles,function(b){a(b)})}});return d})
+
+define(['jquery', 'timer'], function($, Timer) {
+
+    var Bubble = Class.extend({
+        init: function(id, element, time) {
+            this.id = id;
+            this.element = element;
+            this.timer = new Timer(5000, time);
+        },
+    
+        isOver: function(time) {
+            if(this.timer.isOver(time)) {
+                return true;
+            }
+            return false;
+        },
+    
+        destroy: function() {
+            $(this.element).remove();
+        },
+    
+        reset: function(time) {
+            this.timer.lastTime = time;
+        }
+    });
+
+    var BubbleManager = Class.extend({
+        init: function(container) {
+            this.container = container;
+            this.bubbles = {};
+        },
+    
+        getBubbleById: function(id) {
+            if(id in this.bubbles) {
+                return this.bubbles[id];
+            }
+            return null;
+        },
+    
+        create: function(id, message, time) {
+            if(this.bubbles[id]) {
+                this.bubbles[id].reset(time);
+                $("#"+id+" p").html(message);
+            }
+            else {
+                var el = $("<div id=\""+id+"\" class=\"bubble\"><p>"+message+"</p><div class=\"thingy\"></div></div>"); //.attr('id', id);
+                $(el).appendTo(this.container);
+            
+                this.bubbles[id] = new Bubble(id, el, time);
+            }
+        },
+    
+        update: function(time) {
+            var self = this,
+                bubblesToDelete = [];
+        
+            _.each(this.bubbles, function(bubble) {
+                if(bubble.isOver(time)) {
+                    bubble.destroy();
+                    bubblesToDelete.push(bubble.id);
+                }
+            });
+        
+            _.each(bubblesToDelete, function(id) {
+                delete self.bubbles[id];
+            });
+        },
+    
+        clean: function() {
+            var self = this,
+                bubblesToDelete = [];
+        
+            _.each(this.bubbles, function(bubble) {
+                bubble.destroy();
+                bubblesToDelete.push(bubble.id);
+            });
+        
+            _.each(bubblesToDelete, function(id) {
+                delete self.bubbles[id];
+            });
+        
+            this.bubbles = {};
+        },
+    
+        destroyBubble: function(id) {
+            var bubble = this.getBubbleById(id);
+        
+            if(bubble) {
+                bubble.destroy();
+                delete this.bubbles[id];
+            }
+        },
+        
+        forEachBubble: function(callback) {
+            _.each(this.bubbles, function(bubble) {
+                callback(bubble);
+            });
+        }
+    });
+    
+    return BubbleManager;
+});

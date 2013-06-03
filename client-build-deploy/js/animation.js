@@ -1,1 +1,69 @@
-define(function(){var a=Class.extend({init:function(a,b,c,d,e){this.name=a,this.length=b,this.row=c,this.width=d,this.height=e,this.reset()},tick:function(){var a=this.currentFrame.index;a=a<this.length-1?a+1:0;if(this.count>0&&a===0){this.count-=1;if(this.count===0){this.currentFrame.index=0,this.endcount_callback();return}}this.currentFrame.x=this.width*a,this.currentFrame.y=this.height*this.row,this.currentFrame.index=a},setSpeed:function(a){this.speed=a},setCount:function(a,b){this.count=a,this.endcount_callback=b},isTimeToAnimate:function(a){return a-this.lastTime>this.speed},update:function(a){this.lastTime===0&&this.name.substr(0,3)==="atk"&&(this.lastTime=a);if(this.isTimeToAnimate(a)){this.lastTime=a,this.tick();return!0}return!1},reset:function(){this.lastTime=0,this.currentFrame={index:0,x:0,y:this.row*this.height}}});return a})
+
+define(function() {
+
+    var Animation = Class.extend({
+        init: function(name, length, row, width, height) {
+            this.name = name;
+        	this.length = length;
+        	this.row = row;
+        	this.width = width;
+        	this.height = height;
+        	this.reset();
+        },
+    
+        tick: function() {
+        	var i = this.currentFrame.index;
+	    
+    	    i = (i < this.length - 1) ? i + 1 : 0;
+	    
+    	    if(this.count > 0) {
+    	        if(i === 0) {
+                    this.count -= 1;
+                    if(this.count === 0) {
+                        this.currentFrame.index = 0;
+                        this.endcount_callback();
+                        return;
+                    }
+                }
+        	}
+	    
+        	this.currentFrame.x = this.width * i;
+        	this.currentFrame.y = this.height * this.row;
+        	this.currentFrame.index = i;
+        },
+    
+        setSpeed: function(speed) {
+            this.speed = speed;
+        },
+    
+        setCount: function(count, onEndCount) {
+            this.count = count;
+            this.endcount_callback = onEndCount;
+        },
+
+        isTimeToAnimate: function(time) {
+        	return (time - this.lastTime) > this.speed;
+        },
+    
+        update: function(time) {
+            if(this.lastTime === 0 && this.name.substr(0, 3) === "atk") {
+                this.lastTime = time;
+            }
+        
+            if(this.isTimeToAnimate(time)) {
+                this.lastTime = time;
+                this.tick();
+                return true;
+            } else {
+                return false;
+            }
+        },
+    
+        reset: function() {
+            this.lastTime = 0;
+            this.currentFrame = { index: 0, x: 0, y: this.row * this.height };
+        }
+    });
+
+    return Animation;
+});

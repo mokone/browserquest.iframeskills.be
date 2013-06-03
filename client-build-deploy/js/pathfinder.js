@@ -1,1 +1,100 @@
-define(["lib/astar"],function(a){var b=Class.extend({init:function(a,b){this.width=a,this.height=b,this.grid=null,this.blankGrid=[],this.initBlankGrid_(),this.ignored=[]},initBlankGrid_:function(){for(var a=0;a<this.height;a+=1){this.blankGrid[a]=[];for(var b=0;b<this.width;b+=1)this.blankGrid[a][b]=0}},findPath:function(b,c,d,e,f){var g=[c.gridX,c.gridY],h=[d,e],i;this.grid=b,this.applyIgnoreList_(!0),i=a(this.grid,g,h),i.length===0&&f===!0&&(i=this.findIncompletePath_(g,h));return i},findIncompletePath_:function(b,c){var d,e,f,g=[];d=a(this.blankGrid,b,c);for(var h=d.length-1;h>0;h-=1){e=d[h][0],f=d[h][1];if(this.grid[f][e]===0){g=a(this.grid,b,[e,f]);break}}return g},ignoreEntity:function(a){a&&this.ignored.push(a)},applyIgnoreList_:function(a){var b=this,c,d,e;_.each(this.ignored,function(e){c=e.isMoving()?e.nextGridX:e.gridX,d=e.isMoving()?e.nextGridY:e.gridY,c>=0&&d>=0&&(b.grid[d][c]=a?0:1)})},clearIgnoreList:function(){this.applyIgnoreList_(!1),this.ignored=[]}});return b})
+
+define(['lib/astar'], function(AStar) {
+
+    var Pathfinder = Class.extend({
+        init: function(width, height) {
+            this.width = width;
+            this.height = height;
+            this.grid = null;
+            this.blankGrid = [];
+            this.initBlankGrid_();
+            this.ignored = [];
+        },
+    
+        initBlankGrid_: function() {
+            for(var i=0; i < this.height; i += 1) {
+                this.blankGrid[i] = [];
+                for(var j=0; j < this.width; j += 1) {
+                    this.blankGrid[i][j] = 0;
+                }
+            }
+        },
+    
+        findPath: function(grid, entity, x, y, findIncomplete) {
+            var start = [entity.gridX, entity.gridY],
+        		end = [x, y],
+        		path;
+
+            this.grid = grid;
+        	this.applyIgnoreList_(true);
+            path = AStar(this.grid, start, end);
+        
+            if(path.length === 0 && findIncomplete === true) {
+                // If no path was found, try and find an incomplete one
+                // to at least get closer to destination.
+                path = this.findIncompletePath_(start, end);
+            }
+        
+            return path;
+        },
+    
+        /**
+         * Finds a path which leads the closest possible to an unreachable x, y position.
+         *
+         * Whenever A* returns an empty path, it means that the destination tile is unreachable.
+         * We would like the entities to move the closest possible to it though, instead of
+         * staying where they are without moving at all. That's why we have this function which
+         * returns an incomplete path to the chosen destination.
+         *
+         * @private
+         * @returns {Array} The incomplete path towards the end position
+         */
+        findIncompletePath_: function(start, end) {
+            var perfect, x, y,
+                incomplete = [];
+
+            perfect = AStar(this.blankGrid, start, end);
+        
+            for(var i=perfect.length-1; i > 0; i -= 1) {
+                x = perfect[i][0];
+                y = perfect[i][1];
+            
+                if(this.grid[y][x] === 0) {
+                    incomplete = AStar(this.grid, start, [x, y]);
+                    break;
+                }
+            }
+            return incomplete;
+        },
+    
+        /**
+         * Removes colliding tiles corresponding to the given entity's position in the pathing grid.
+         */
+        ignoreEntity: function(entity) {
+            if(entity) {
+                this.ignored.push(entity);
+            }
+        },
+
+        applyIgnoreList_: function(ignored) {
+            var self = this,
+                x, y, g;
+
+            _.each(this.ignored, function(entity) {
+                x = entity.isMoving() ? entity.nextGridX : entity.gridX;
+                y = entity.isMoving() ? entity.nextGridY : entity.gridY;
+
+                if(x >= 0 && y >= 0) {
+                    self.grid[y][x] = ignored ? 0 : 1;
+                }
+            });
+        },
+    
+        clearIgnoreList: function() {
+            this.applyIgnoreList_(false);
+            this.ignored = [];
+        }
+    });
+    
+    return Pathfinder;
+});

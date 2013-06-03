@@ -1,1 +1,14 @@
-define(function(){var a={LootException:Class.extend({init:function(a){this.message=a}})};return a})
+
+define(function() {
+    
+    var Exceptions = {
+        
+        LootException: Class.extend({
+            init: function(message) {
+                this.message = message;
+            }
+        })
+    };
+    
+    return Exceptions;
+});

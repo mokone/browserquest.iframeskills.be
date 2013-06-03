@@ -1,1 +1,259 @@
-define(function(){var a=Class.extend({init:function(a,b){var c=this;this.id=a,this.kind=b,this.sprite=null,this.flipSpriteX=!1,this.flipSpriteY=!1,this.animations=null,this.currentAnimation=null,this.shadowOffsetY=0,this.setGridPosition(0,0),this.isLoaded=!1,this.isHighlighted=!1,this.visible=!0,this.isFading=!1,this.setDirty()},setName:function(a){this.name=a},setPosition:function(a,b){this.x=a,this.y=b},setGridPosition:function(a,b){this.gridX=a,this.gridY=b,this.setPosition(a*16,b*16)},setSprite:function(a){if(!a){log.error(this.id+" : sprite is null",!0);throw"Error"}if(!this.sprite||this.sprite.name!==a.name){this.sprite=a,this.normalSprite=this.sprite;if(Types.isMob(this.kind)||Types.isPlayer(this.kind))this.hurtSprite=a.getHurtSprite();this.animations=a.createAnimations(),this.isLoaded=!0,this.ready_func&&this.ready_func()}},getSprite:function(){return this.sprite},getSpriteName:function(){return Types.getKindAsString(this.kind)},getAnimationByName:function(a){var b=null;a in this.animations?b=this.animations[a]:log.error("No animation called "+a);return b},setAnimation:function(a,b,c,d){var e=this;if(this.isLoaded){if(this.currentAnimation&&this.currentAnimation.name===a)return;var f=this.sprite,g=this.getAnimationByName(a);g&&(this.currentAnimation=g,a.substr(0,3)==="atk"&&this.currentAnimation.reset(),this.currentAnimation.setSpeed(b),this.currentAnimation.setCount(c?c:0,d||function(){e.idle()}))}else this.log_error("Not ready for animation")},hasShadow:function(){return!1},ready:function(a){this.ready_func=a},clean:function(){this.stopBlinking()},log_info:function(a){log.info("["+this.id+"] "+a)},log_error:function(a){log.error("["+this.id+"] "+a)},setHighlight:function(a){a===!0?(this.sprite=this.sprite.silhouetteSprite,this.isHighlighted=!0):(this.sprite=this.normalSprite,this.isHighlighted=!1)},setVisible:function(a){this.visible=a},isVisible:function(){return this.visible},toggleVisibility:function(){this.visible?this.setVisible(!1):this.setVisible(!0)},getDistanceToEntity:function(a){var b=Math.abs(a.gridX-this.gridX),c=Math.abs(a.gridY-this.gridY);return b>c?b:c},isCloseTo:function(a){var b,c,d,e=!1;a&&(b=Math.abs(a.gridX-this.gridX),c=Math.abs(a.gridY-this.gridY),b<30&&c<14&&(e=!0));return e},isAdjacent:function(a){var b=!1;a&&(b=this.getDistanceToEntity(a)>1?!1:!0);return b},isAdjacentNonDiagonal:function(a){var b=!1;this.isAdjacent(a)&&(this.gridX===a.gridX||this.gridY===a.gridY)&&(b=!0);return b},isDiagonallyAdjacent:function(a){return this.isAdjacent(a)&&!this.isAdjacentNonDiagonal(a)},forEachAdjacentNonDiagonalPosition:function(a){a(this.gridX-1,this.gridY,Types.Orientations.LEFT),a(this.gridX,this.gridY-1,Types.Orientations.UP),a(this.gridX+1,this.gridY,Types.Orientations.RIGHT),a(this.gridX,this.gridY+1,Types.Orientations.DOWN)},fadeIn:function(a){this.isFading=!0,this.startFadingTime=a},blink:function(a,b){var c=this;this.blinking=setInterval(function(){c.toggleVisibility()},a)},stopBlinking:function(){this.blinking&&clearInterval(this.blinking),this.setVisible(!0)},setDirty:function(){this.isDirty=!0,this.dirty_callback&&this.dirty_callback(this)},onDirty:function(a){this.dirty_callback=a}});return a})
+
+define(function() {
+
+    var Entity = Class.extend({
+        init: function(id, kind) {
+    	    var self = this;
+	    
+            this.id = id;
+            this.kind = kind;
+
+            // Renderer
+    		this.sprite = null;
+    		this.flipSpriteX = false;
+        	this.flipSpriteY = false;
+    		this.animations = null;
+    		this.currentAnimation = null;
+            this.shadowOffsetY = 0;
+		
+    		// Position
+    		this.setGridPosition(0, 0);
+		
+            // Modes
+            this.isLoaded = false;
+            this.isHighlighted = false;
+            this.visible = true;
+            this.isFading = false;
+            this.setDirty();
+    	},
+	
+    	setName: function(name) {
+    		this.name = name;
+    	},
+	
+    	setPosition: function(x, y) {
+    		this.x = x;
+    		this.y = y;
+    	},
+	
+    	setGridPosition: function(x, y) {
+    		this.gridX = x;
+    		this.gridY = y;
+		
+    		this.setPosition(x * 16, y * 16);
+    	},
+	
+    	setSprite: function(sprite) {
+    	    if(!sprite) {
+    	        log.error(this.id + " : sprite is null", true);
+    	        throw "Error";
+    	    }
+	    
+    	    if(this.sprite && this.sprite.name === sprite.name) {
+    	        return;
+    	    }
+
+    	    this.sprite = sprite;
+            this.normalSprite = this.sprite;
+        
+            if(Types.isMob(this.kind) || Types.isPlayer(this.kind)) {
+            	this.hurtSprite = sprite.getHurtSprite();
+            }
+		
+    		this.animations = sprite.createAnimations();
+		
+    		this.isLoaded = true;
+    		if(this.ready_func) {
+    			this.ready_func();
+    		}
+    	},
+	
+    	getSprite: function() {
+    	    return this.sprite;
+    	},
+	
+    	getSpriteName: function() {
+    	    return Types.getKindAsString(this.kind);
+    	},
+	
+    	getAnimationByName: function(name) {
+            var animation = null;
+        
+            if(name in this.animations) {
+                animation = this.animations[name];
+            }
+            else {
+                log.error("No animation called "+ name);
+            }
+            return animation;
+        },
+    
+    	setAnimation: function(name, speed, count, onEndCount) {
+    	    var self = this;
+	    
+            if(this.isLoaded) {
+    		    if(this.currentAnimation && this.currentAnimation.name === name) {
+    		        return;
+    		    }
+		    
+    		    var s = this.sprite,
+                    a = this.getAnimationByName(name);
+		
+    			if(a) {
+    				this.currentAnimation = a;
+    				if(name.substr(0, 3) === "atk") {
+    				    this.currentAnimation.reset();
+    				}
+    				this.currentAnimation.setSpeed(speed);
+    				this.currentAnimation.setCount(count ? count : 0, onEndCount || function() {
+    				    self.idle();
+    				});
+    			}
+    		}
+    		else {
+    			this.log_error("Not ready for animation");
+    		}
+    	},
+	
+    	hasShadow: function() {
+    	    return false;
+    	},
+	
+    	ready: function(f) {
+    		this.ready_func = f;
+    	},
+	
+    	clean: function() {
+            this.stopBlinking();
+    	},
+	
+        log_info: function(message) {
+            log.info("["+this.id+"] " + message);
+        },
+    
+        log_error: function(message) {
+            log.error("["+this.id+"] " + message);
+        },
+    
+        setHighlight: function(value) {
+            if(value === true) {
+                this.sprite = this.sprite.silhouetteSprite;
+                this.isHighlighted = true;
+            }
+            else {
+                this.sprite = this.normalSprite;
+                this.isHighlighted = false;
+            }
+        },
+    
+        setVisible: function(value) {
+            this.visible = value;
+        },
+    
+        isVisible: function() {
+            return this.visible;
+        },
+    
+        toggleVisibility: function() {
+            if(this.visible) {
+                this.setVisible(false);
+            } else {
+                this.setVisible(true);
+            }
+        },
+    
+        /**
+         * 
+         */
+        getDistanceToEntity: function(entity) {
+            var distX = Math.abs(entity.gridX - this.gridX);
+            var distY = Math.abs(entity.gridY - this.gridY);
+
+            return (distX > distY) ? distX : distY;
+        },
+    
+        isCloseTo: function(entity) {
+            var dx, dy, d, close = false;
+            if(entity) {
+                dx = Math.abs(entity.gridX - this.gridX);
+                dy = Math.abs(entity.gridY - this.gridY);
+            
+                if(dx < 30 && dy < 14) {
+                    close = true;
+                }
+            }
+            return close;
+        },
+    
+        /**
+         * Returns true if the entity is adjacent to the given one.
+         * @returns {Boolean} Whether these two entities are adjacent.
+         */
+        isAdjacent: function(entity) {
+            var adjacent = false;
+        
+            if(entity) {
+                adjacent = this.getDistanceToEntity(entity) > 1 ? false : true;
+            }
+            return adjacent;
+        },
+    
+        /**
+         * 
+         */
+        isAdjacentNonDiagonal: function(entity) {
+            var result = false;
+
+            if(this.isAdjacent(entity) && !(this.gridX !== entity.gridX && this.gridY !== entity.gridY)) {
+                result = true;
+            }
+        
+            return result;
+        },
+        
+        isDiagonallyAdjacent: function(entity) {
+            return this.isAdjacent(entity) && !this.isAdjacentNonDiagonal(entity);
+        },
+        
+        forEachAdjacentNonDiagonalPosition: function(callback) {
+            callback(this.gridX - 1, this.gridY, Types.Orientations.LEFT);
+            callback(this.gridX, this.gridY - 1, Types.Orientations.UP);
+            callback(this.gridX + 1, this.gridY, Types.Orientations.RIGHT);
+            callback(this.gridX, this.gridY + 1, Types.Orientations.DOWN);
+            
+        },
+    
+        fadeIn: function(currentTime) {
+            this.isFading = true;
+            this.startFadingTime = currentTime;
+        },
+    
+        blink: function(speed, callback) {
+            var self = this;
+        
+            this.blinking = setInterval(function() {
+                self.toggleVisibility();
+            }, speed);
+        },
+    
+        stopBlinking: function() {
+            if(this.blinking) {
+                clearInterval(this.blinking);
+            }
+            this.setVisible(true);
+        },
+        
+        setDirty: function() {
+            this.isDirty = true;
+            if(this.dirty_callback) {
+                this.dirty_callback(this);
+            }
+        },
+        
+        onDirty: function(dirty_callback) {
+            this.dirty_callback = dirty_callback;
+        }
+    });
+    
+    return Entity;
+});

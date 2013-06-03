@@ -1,1 +1,65 @@
-define(function(){var a=Class.extend({init:function(){this.startValue=0,this.endValue=0,this.duration=0,this.inProgress=!1},start:function(a,b,c,d,e,f){this.startTime=a,this.updateFunction=b,this.stopFunction=c,this.startValue=d,this.endValue=e,this.duration=f,this.inProgress=!0,this.count=0},step:function(a){if(this.inProgress)if(this.count>0)this.count-=1,log.debug(a+": jumped frame");else{var b=a-this.startTime;b>this.duration&&(b=this.duration);var c=this.endValue-this.startValue,d=this.startValue+c/this.duration*b;d=Math.round(d),b===this.duration||d===this.endValue?(this.stop(),this.stopFunction&&this.stopFunction()):this.updateFunction&&this.updateFunction(d)}},restart:function(a,b,c){this.start(a,this.updateFunction,this.stopFunction,b,c,this.duration),this.step(a)},stop:function(){this.inProgress=!1}});return a})
+
+define(function() {
+
+    var Transition = Class.extend({
+        init: function() {
+            this.startValue = 0;
+            this.endValue = 0;
+            this.duration = 0;
+            this.inProgress = false;
+        },
+
+        start: function(currentTime, updateFunction, stopFunction, startValue, endValue, duration) {
+            this.startTime = currentTime;
+            this.updateFunction = updateFunction;
+            this.stopFunction = stopFunction;
+            this.startValue = startValue;
+            this.endValue = endValue;
+            this.duration = duration;
+            this.inProgress = true;
+            this.count = 0;
+        },
+
+        step: function(currentTime) {
+            if(this.inProgress) {
+                if(this.count > 0) {
+                    this.count -= 1;
+                    log.debug(currentTime + ": jumped frame");
+                }
+                else {
+                    var elapsed = currentTime - this.startTime;
+            
+                    if(elapsed > this.duration) {
+                        elapsed = this.duration;
+                    }
+        
+                    var diff = this.endValue - this.startValue;
+                    var i = this.startValue + ((diff / this.duration) * elapsed);
+            
+                    i = Math.round(i);
+            
+                    if(elapsed === this.duration || i === this.endValue) {
+                        this.stop();
+                        if(this.stopFunction) {
+                            this.stopFunction();
+                        }
+                    }
+                    else if(this.updateFunction) {
+                        this.updateFunction(i);
+                    }
+                }
+            }
+        },
+
+        restart: function(currentTime, startValue, endValue) {
+            this.start(currentTime, this.updateFunction, this.stopFunction, startValue, endValue, this.duration);
+            this.step(currentTime);
+        },
+
+        stop: function() {
+            this.inProgress = false;
+        }
+    });
+    
+    return Transition;
+});

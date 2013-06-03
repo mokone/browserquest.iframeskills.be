@@ -1,1 +1,14 @@
-define(["character"],function(a){var b=a.extend({init:function(a,b){this._super(a,b),this.aggroRange=1,this.isAggressive=!0}});return b})
+
+define(['character'], function(Character) {
+    
+    var Mob = Character.extend({
+        init: function(id, kind) {
+            this._super(id, kind);
+        
+            this.aggroRange = 1;
+            this.isAggressive = true;
+        }
+    });
+    
+    return Mob;
+});

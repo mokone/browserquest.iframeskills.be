@@ -1,1 +1,109 @@
-define(function(){var a=Class.extend({init:function(a){this.game=a,this.infos={},this.destroyQueue=[]},addDamageInfo:function(a,b,d,e){var f=this.game.currentTime,g=f+""+Math.abs(a)+""+b+""+d,h=this,i=new c(g,a,b,d,c.DURATION,e);i.onDestroy(function(a){h.destroyQueue.push(a)}),this.infos[g]=i},forEachInfo:function(a){var b=this;_.each(this.infos,function(b,c){a(b)})},update:function(a){var b=this;this.forEachInfo(function(b){b.update(a)}),_.each(this.destroyQueue,function(a){delete b.infos[a]}),this.destroyQueue=[]}}),b={received:{fill:"rgb(255, 50, 50)",stroke:"rgb(255, 180, 180)"},inflicted:{fill:"white",stroke:"#373737"},healed:{fill:"rgb(80, 255, 80)",stroke:"rgb(50, 120, 50)"}},c=Class.extend({DURATION:1e3,init:function(a,c,d,e,f,g){this.id=a,this.value=c,this.duration=f,this.x=d,this.y=e,this.opacity=1,this.lastTime=0,this.speed=100,this.fillColor=b[g].fill,this.strokeColor=b[g].stroke},isTimeToAnimate:function(a){return a-this.lastTime>this.speed},update:function(a){this.isTimeToAnimate(a)&&(this.lastTime=a,this.tick())},tick:function(){this.y-=1,this.opacity-=.07,this.opacity<0&&this.destroy()},onDestroy:function(a){this.destroy_callback=a},destroy:function(){this.destroy_callback&&this.destroy_callback(this.id)}});return a})
+
+define(function() {
+
+    var InfoManager = Class.extend({
+        init: function(game) {
+            this.game = game;
+            this.infos = {};
+            this.destroyQueue = [];
+        },
+    
+        addDamageInfo: function(value, x, y, type) {
+            var time = this.game.currentTime,
+                id = time+""+Math.abs(value)+""+x+""+y,
+                self = this,
+                info = new DamageInfo(id, value, x, y, DamageInfo.DURATION, type);
+        
+            info.onDestroy(function(id) {
+                self.destroyQueue.push(id);
+            });
+            this.infos[id] = info;
+        },
+    
+        forEachInfo: function(callback) {
+            var self = this;
+        
+            _.each(this.infos, function(info, id) {
+                callback(info);
+            });
+        },
+    
+        update: function(time) {
+            var self = this;
+        
+            this.forEachInfo(function(info) {
+                info.update(time);
+            });
+        
+            _.each(this.destroyQueue, function(id) {
+                delete self.infos[id];
+            });
+            this.destroyQueue = [];
+        }
+    });
+
+
+    var damageInfoColors = {
+        "received": {
+            fill: "rgb(255, 50, 50)",
+            stroke: "rgb(255, 180, 180)"
+        },
+        "inflicted": {
+            fill: "white",
+            stroke: "#373737"
+        },
+        "healed": {
+            fill: "rgb(80, 255, 80)",
+            stroke: "rgb(50, 120, 50)"
+        }
+    };
+
+
+    var DamageInfo = Class.extend({
+        DURATION: 1000,
+    
+        init: function(id, value, x, y, duration, type) {
+            this.id = id;
+            this.value = value;
+            this.duration = duration;
+            this.x = x;
+            this.y = y;
+            this.opacity = 1.0;
+            this.lastTime = 0;
+            this.speed = 100;
+            this.fillColor = damageInfoColors[type].fill;
+            this.strokeColor = damageInfoColors[type].stroke;
+        },
+    
+        isTimeToAnimate: function(time) {
+        	return (time - this.lastTime) > this.speed;
+        },
+    
+        update: function(time) {
+            if(this.isTimeToAnimate(time)) {
+                this.lastTime = time;
+                this.tick();
+            }
+        },
+    
+        tick: function() {
+            this.y -= 1;
+            this.opacity -= 0.07;
+            if(this.opacity < 0) {
+                this.destroy();
+            }
+        },
+    
+        onDestroy: function(callback) {
+            this.destroy_callback = callback;
+        },
+    
+        destroy: function() {
+            if(this.destroy_callback) {
+                this.destroy_callback(this.id);
+            }
+        }
+    });
+    
+    return InfoManager;
+});
